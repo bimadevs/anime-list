@@ -1,0 +1,3 @@
+// Konfigurasi Supabase
+export const SUPABASE_URL = 'https://lupprdxmaraogkumuewl.supabase.co';
+export const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1cHByZHhtYXJhb2drdW11ZXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDc0NTIsImV4cCI6MjA2MzEyMzQ1Mn0.H6MDU-sO4v5PfY2NaUM6YEyt2lmFMeHQyjWm6nL6gcc';

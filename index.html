@@ -1,0 +1,2689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Koleksi Anime</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="style-supabase.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --header-bg: #e63946;
+            --header-text: #ffffff;
+            --genre-bg: #ffd166;
+            --genre-text: #212529;
+            --input-bg: #ffffff;
+            --input-border: #ced4da;
+            --modal-bg: #ffffff;
+            --shadow-color: rgba(0,0,0,0.1);
+            --ongoing-color: #06d6a0;
+            --finished-color: #9b5de5;
+            --new-genre-bg: #06d6a0;
+            --delete-color: #e63946;
+            --hover-color: #ff6b6b;
+            --transition-speed: 0.3s;
+            --admin-color: #3a86ff;
+            --facebook-blue: #4267B2;
+        }
+
+        .dark-mode {
+            --bg-color: #121212;
+            --text-color: #f8f9fa;
+            --card-bg: #1e1e1e;
+            --header-bg: #c1121f;
+            --genre-bg: #ffaa00;
+            --genre-text: #121212;
+            --input-bg: #2d2d2d;
+            --input-border: #444;
+            --modal-bg: #2d2d2d;
+            --shadow-color: rgba(0,0,0,0.3);
+            --ongoing-color: #04a57a;
+            --finished-color: #7b4cbf;
+            --new-genre-bg: #04a57a;
+            --admin-color: #2667cc;
+            --facebook-blue: #365899;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            transition: all var(--transition-speed) ease;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--header-bg);
+        }
+
+        h1 {
+            color: var(--header-bg);
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 700;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: space-between;
+        }
+
+        .search-box, .filter-controls, .admin-controls {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input, select, button, textarea {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            transition: all var(--transition-speed) ease;
+            width: 100%;
+        }
+
+        button {
+            background-color: var(--header-bg);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background-color: var(--hover-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .admin-btn {
+            background-color: var(--admin-color);
+        }
+
+        .admin-btn:hover {
+            background-color: #2667cc;
+        }
+
+        .new-genre-btn {
+            background-color: var(--new-genre-bg);
+        }
+
+        .delete-btn {
+            background-color: var(--delete-color);
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity var(--transition-speed);
+        }
+
+        /* Grid View Styles */
+        .anime-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Table View Styles */
+        .anime-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px var(--shadow-color);
+        }
+
+        .anime-table th {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .anime-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--input-border);
+        }
+
+        .anime-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .anime-table .facebook-share-btn {
+            background-color: var(--facebook-blue);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .anime-table .facebook-share-btn:hover {
+            background-color: var(--facebook-blue);
+            opacity: 0.9;
+        }
+
+        .view-toggle {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1rem;
+            gap: 0.5rem;
+        }
+
+        .view-toggle-btn {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--input-border);
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+
+        .view-toggle-btn.active {
+            background-color: var(--header-bg);
+            color: white;
+        }
+
+        .anime-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px var(--shadow-color);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+        }
+
+        .anime-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px var(--shadow-color);
+        }
+
+        .anime-card:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .anime-header {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .anime-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .anime-status {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            flex-shrink: 0;
+        }
+
+        .anime-status.ongoing {
+            background-color: var(--ongoing-color);
+        }
+
+        .anime-status.finished {
+            background-color: var(--finished-color);
+        }
+
+        .anime-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .anime-body {
+            padding: 1.25rem;
+        }
+
+        .anime-genres {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .anime-genre {
+            display: inline-block;
+            background-color: var(--genre-bg);
+            color: var(--genre-text);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .admin-genre {
+            background-color: var(--admin-color);
+            color: white;
+            padding-right: 20px;
+        }
+
+        .delete-genre-btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 0.7rem;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .delete-genre-btn:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        .anime-description {
+            color: var(--text-color);
+            opacity: 0.9;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: var(--modal-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .close-btn:hover {
+            transform: rotate(90deg);
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .image-upload-container {
+            margin-bottom: 1.25rem;
+        }
+
+        .image-preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            margin-top: 1rem;
+            border-radius: 8px;
+            display: none;
+            border: 2px dashed var(--input-border);
+        }
+
+        .genre-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .genre-tag {
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            position: relative;
+        }
+
+        .genre-tag.selected {
+            background-color: var(--header-bg);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .status-options {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .status-option {
+            flex: 1;
+        }
+
+        .status-option input {
+            display: none;
+        }
+
+        .status-option label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .status-option input:checked + label {
+            background-color: var(--header-bg);
+            color: white;
+        }
+
+        .contact-admin-btn {
+            background-color: #25D366;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .contact-admin-btn:hover {
+            background-color: #128C7E;
+        }
+
+        /* Comment Section Styles */
+        .comments-section {
+            margin-top: 2rem;
+            border-top: 1px solid var(--input-border);
+            padding-top: 1.5rem;
+        }
+
+        .comments-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .comment-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1.5rem;
+            padding-right: 0.5rem;
+        }
+
+        .comment {
+            background-color: var(--input-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 1px solid var(--input-border);
+            position: relative;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .comment:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .comment-admin {
+            border-left: 4px solid var(--admin-color);
+        }
+
+        .comment-author {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .comment-author.admin {
+            color: var(--admin-color);
+        }
+
+        .comment-text {
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+            padding-left: 1.5rem;
+        }
+
+        .comment-date {
+            font-size: 0.8rem;
+            color: var(--text-color);
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .comment-form {
+            margin-top: 1.5rem;
+        }
+
+        .comment-form textarea {
+            width: 100%;
+            min-height: 100px;
+            margin-bottom: 0.5rem;
+            resize: vertical;
+            padding: 0.75rem;
+        }
+
+        .delete-comment-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--delete-color);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity var(--transition-speed);
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .delete-comment-btn:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        .comment:hover .delete-comment-btn {
+            opacity: 1;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .new-comment {
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Manage Genres Modal */
+        .manage-genres-btn {
+            background-color: var(--admin-color);
+        }
+
+        /* Genre Management Styles */
+        .genre-management {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .genre-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--genre-bg);
+            color: var(--genre-text);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+
+        .genre-item.admin-genre {
+            background-color: var(--admin-color);
+            color: white;
+        }
+
+        .genre-delete-btn {
+            background: none;
+            border: none;
+            color: var(--delete-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Facebook Sharing Styles */
+        .share-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .share-btn {
+            background-color: var(--facebook-blue);
+            color: white;
+        }
+
+        .share-btn:hover {
+            background-color: var(--facebook-blue);
+            opacity: 0.9;
+        }
+
+        .share-input {
+            flex-grow: 1;
+        }
+
+        .copied-message {
+            color: var(--ongoing-color);
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .search-box, .filter-controls, .admin-controls {
+                width: 100%;
+            }
+            
+            input, select, button {
+                width: 100%;
+            }
+            
+            .status-options {
+                flex-direction: column;
+            }
+
+            .anime-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .anime-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            
+            .modal-content {
+                padding: 1rem;
+            }
+
+            .comment-text {
+                padding-left: 0;
+            }
+
+            .share-controls {
+                flex-direction: column;
+            }
+        }
+
+        /* Modern scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--input-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--header-bg);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--hover-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-container">
+            <h1>ASI WEB</h1>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+        
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Cari anime..." aria-label="Search anime">
+                <button id="searchBtn">Cari</button>
+            </div>
+            <div class="filter-controls">
+                <select id="genreFilter" aria-label="Filter by genre">
+                    <option value="">Semua Genre</option>
+                </select>
+                <select id="statusFilter" aria-label="Filter by status">
+                    <option value="">Semua Status</option>
+                    <option value="Ongoing">Ongoing</option>
+                    <option value="Finished">Finished</option>
+                </select>
+                <button id="resetBtn"><i class="fas fa-undo"></i> Reset</button>
+            </div>
+            <div class="admin-controls">
+                <button id="authBtn" class="admin-btn"><i class="fas fa-user-shield"></i> <span id="authBtnText">Masuk</span></button>
+                <button id="addAnimeBtn" class="admin-btn" style="display: none;"><i class="fas fa-plus"></i> Tambah Anime</button>
+                <button id="manageGenresBtn" class="admin-btn" style="display: none;"><i class="fas fa-tags"></i> Kelola Genre</button>
+            </div>
+        </div>
+
+        <div class="view-toggle">
+            <button id="gridViewBtn" class="view-toggle-btn active"><i class="fas fa-th-large"></i> Grid</button>
+            <button id="tableViewBtn" class="view-toggle-btn"><i class="fas fa-table"></i> Table</button>
+        </div>
+        
+        <div class="anime-grid" id="animeGrid"></div>
+        <div class="anime-table-container" id="animeTableContainer" style="display: none;">
+            <table class="anime-table">
+                <thead>
+                    <tr>
+                        <th>Judul Anime</th>
+                        <th>Status</th>
+                        <th>Genre</th>
+                        <th id="facebookHeader" style="display: none;">Facebook</th>
+                    </tr>
+                </thead>
+                <tbody id="animeTableBody"></tbody>
+            </table>
+        </div>
+        
+        <!-- Anime Details Modal -->
+        <div class="modal" id="animeModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-content">
+                <span class="close-btn" aria-label="Close modal">&times;</span>
+                <div id="modalContent"></div>
+            </div>
+        </div>
+        
+        <!-- Add Anime Modal -->
+        <div class="modal" id="addAnimeModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-content">
+                <span class="close-btn" aria-label="Close modal">&times;</span>
+                <h2><i class="fas fa-plus"></i> Tambah Anime Baru</h2>
+                <form id="addAnimeForm">
+                    <div class="form-group">
+                        <label for="newAnimeTitle"><i class="fas fa-heading"></i> Judul Anime</label>
+                        <input type="text" id="newAnimeTitle" required>
+                    </div>
+                    <div class="form-group image-upload-container">
+                        <label><i class="fas fa-image"></i> Gambar Anime</label>
+                        <label for="imageUpload" class="upload-btn admin-btn"><i class="fas fa-upload"></i> Pilih Gambar</label>
+                        <input type="file" id="imageUpload" accept="image/*">
+                        <img id="imagePreview" class="image-preview" alt="Preview Gambar">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-tags"></i> Genre</label>
+                        <div class="genre-tags" id="genreTagsContainer"></div>
+                        <input type="hidden" id="newAnimeGenres">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-plus-circle"></i> Tambah Genre Baru</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="newGenreInput" placeholder="Nama genre baru">
+                            <button type="button" onclick="addNewGenreFromInput()" class="admin-btn new-genre-btn"><i class="fas fa-plus"></i> Tambah</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-info-circle"></i> Status</label>
+                        <div class="status-options">
+                            <div class="status-option">
+                                <input type="radio" id="statusOngoing" name="status" value="Ongoing" checked>
+                                <label for="statusOngoing"><i class="fas fa-spinner"></i> Ongoing</label>
+                            </div>
+                            <div class="status-option">
+                                <input type="radio" id="statusFinished" name="status" value="Finished">
+                                <label for="statusFinished"><i class="fas fa-check-circle"></i> Finished</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="newAnimeEpisodes"><i class="fas fa-list-ol"></i> Jumlah Episode</label>
+                        <input type="number" id="newAnimeEpisodes" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="newAnimeRating"><i class="fas fa-star"></i> Rating (1-5)</label>
+                        <input type="number" id="newAnimeRating" min="1" max="5" step="0.1" value="4.0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newAnimeDescription"><i class="fas fa-align-left"></i> Deskripsi</label>
+                        <textarea id="newAnimeDescription" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="newAnimeFacebookLink"><i class="fab fa-facebook"></i> Link Facebook</label>
+                        <input type="url" id="newAnimeFacebookLink" placeholder="https://facebook.com/...">
+                    </div>
+                    <button type="submit" class="admin-btn"><i class="fas fa-save"></i> Simpan Anime</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Admin Login Modal -->
+        <div class="modal" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-content">
+                <span class="close-btn" aria-label="Close modal">&times;</span>
+                <h2><i class="fas fa-user-shield"></i> Admin Login</h2>
+                <button id="loginPageBtn"><i class="fas fa-sign-in-alt"></i> Masuk/Daftar</button>
+                <p id="loginError" style="color: red; display: none;"><i class="fas fa-exclamation-circle"></i> Password salah!</p>
+                <button class="contact-admin-btn" id="contactAdminBtn">
+                    <i class="fab fa-whatsapp"></i> Hubungi Admin via WhatsApp
+                </button>
+            </div>
+        </div>
+        
+        <!-- Manage Genres Modal -->
+        <div class="modal" id="manageGenresModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-content">
+                <span class="close-btn" aria-label="Close modal">&times;</span>
+                <h2><i class="fas fa-tags"></i> Kelola Genre</h2>
+                <div class="genre-management" id="adminGenresList"></div>
+                <button class="admin-btn" style="margin-top: 1rem;" onclick="document.getElementById('manageGenresModal').style.display='none'">
+                    <i class="fas fa-check"></i> Selesai
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase Auth Integration
+        // Supabase konfigurasi - ganti dengan kredensial Supabase Anda
+        const SUPABASE_URL = 'https://lupprdxmaraogkumuewl.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1cHByZHhtYXJhb2drdW11ZXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDc0NTIsImV4cCI6MjA2MzEyMzQ1Mn0.H6MDU-sO4v5PfY2NaUM6YEyt2lmFMeHQyjWm6nL6gcc';
+        
+        // Initialize Supabase client
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Variable untuk menyimpan state autentikasi - sudah dideklarasikan di bawah sebagai bagian dari App State
+        
+        // Fungsi untuk mendaftarkan pengguna baru
+        async function signUp(email, password, username) {
+          try {
+            const { data, error } = await supabaseClient.auth.signUp({
+              email,
+              password,
+              options: {
+                data: {
+                  username: username
+                }
+              }
+            });
+        
+            if (error) throw error;
+            
+            return { success: true, data };
+          } catch (error) {
+            console.error('Error signing up:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // Fungsi untuk login
+        async function signIn(email, password) {
+          try {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+              email,
+              password
+            });
+        
+            if (error) throw error;
+            
+            currentUser = data.user;
+            return { success: true, user: data.user };
+          } catch (error) {
+            console.error('Error signing in:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // Fungsi untuk logout
+        async function signOut() {
+          try {
+            console.log('Mencoba logout user...');
+            const { error } = await supabaseClient.auth.signOut();
+            if (error) throw error;
+            
+            // Hapus semua data user dari global state
+            window.currentUser = null;
+            window.isAdmin = false;
+            window.isLoggedIn = false;
+            
+            // Hapus data dari localStorage
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('isAdmin');
+            
+            console.log('Logout berhasil, semua state sudah dibersihkan');
+            return { success: true };
+          } catch (error) {
+            console.error('Error saat logout:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // Fungsi untuk mendapatkan sesi saat ini
+        async function getCurrentSession() {
+          try {
+            const { data, error } = await supabaseClient.auth.getSession();
+            
+            if (error) throw error;
+            
+            if (data.session) {
+              currentUser = data.session.user;
+              return { success: true, user: data.session.user };
+            }
+            
+            return { success: false, user: null };
+          } catch (error) {
+            console.error('Error getting session:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // Fungsi untuk mengirim reset password
+        async function resetPassword(email) {
+          try {
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+              redirectTo: `${window.location.origin}/index.html?reset=true`
+            });
+        
+            if (error) throw error;
+            
+            return { success: true };
+          } catch (error) {
+            console.error('Error resetting password:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // Fungsi untuk mengubah password
+        async function updatePassword(newPassword) {
+          try {
+            const { error } = await supabaseClient.auth.updateUser({
+              password: newPassword
+            });
+        
+            if (error) throw error;
+            
+            return { success: true };
+          } catch (error) {
+            console.error('Error updating password:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // Fungsi untuk cek apakah user adalah admin
+        async function isUserAdmin() {
+          console.log('====== PENGECEKAN ADMIN STATUS ======');
+          if (!window.currentUser) {
+            console.log('isUserAdmin: tidak ada currentUser, mengembalikan false');
+            return false;
+          }
+        
+          // Admin email list - pastikan ini termasuk email yang Anda gunakan untuk login
+          const adminEmails = ['admin@anime.com', 'indorsari24@gmail.com', 'bimadev77@gmail.com'];
+          const userEmail = window.currentUser.email;
+          
+          console.log('isUserAdmin: memeriksa status admin untuk user:', {
+            id: window.currentUser.id,
+            email: userEmail
+          });
+          
+          // Jika email ada dalam daftar admin, pemberian hak admin langsung
+          if (adminEmails.includes(userEmail)) {
+            console.log(`isUserAdmin: ${userEmail} dikenali sebagai admin dari daftar email admin`);
+            // Pastikan profil disinkronkan
+            try {
+              await createUserProfile(window.currentUser, true);
+            } catch (e) {
+              console.log('Info: Gagal memperbarui profil, tetapi tetap memberikan akses admin:', e.message);
+            }
+            return true;
+          }
+          
+          try {
+            // Dapatkan data user dari tabel profiles
+            console.log('isUserAdmin: mencoba mengambil data profile dari Supabase...');
+            const { data, error } = await supabaseClient
+              .from('profiles')
+              .select('role')
+              .eq('id', window.currentUser.id)
+              .single();
+        
+            if (error) {
+              console.error('isUserAdmin: error saat query profiles:', error.message);
+              if (error.code === 'PGRST116') { // Record not found
+                console.log('isUserAdmin: profil tidak ditemukan, mencoba membuat profil baru...');
+                // Cek email admin untuk profil baru
+                const makeAdmin = adminEmails.includes(userEmail);
+                await createUserProfile(window.currentUser, makeAdmin);
+                return makeAdmin;
+              }
+              throw error;
+            }
+            
+            if (!data) {
+              console.error('isUserAdmin: tidak ada data profile ditemukan untuk user', window.currentUser.id);
+              // Coba buat profile berdasarkan email
+              const makeAdmin = adminEmails.includes(userEmail);
+              await createUserProfile(window.currentUser, makeAdmin);
+              return makeAdmin;
+            }
+            
+            console.log('isUserAdmin: role user dari database adalah', data.role);
+            const isAdmin = data.role === 'admin';
+            
+            if (isAdmin) {
+              console.log('isUserAdmin: User ADALAH admin berdasarkan database');
+            } else {
+              console.log('isUserAdmin: User BUKAN admin berdasarkan database');
+            }
+            
+            return isAdmin;
+          } catch (error) {
+            console.error('Error checking admin status:', error.message);
+            
+            // Fallback ke pengecekan email jika database bermasalah
+            if (adminEmails.includes(userEmail)) {
+              console.log('isUserAdmin: memberikan akses admin berdasarkan email meskipun terjadi error');
+              return true;
+            }
+            return false;
+          } finally {
+            console.log('====== AKHIR PENGECEKAN ADMIN STATUS ======');
+          }
+        }
+        
+        // Fungsi untuk membuat profil user jika belum ada
+        async function createUserProfile(user, isAdmin = false) {
+          try {
+            console.log('Mencoba membuat profil untuk user baru:', user.id);
+            // Admin email - gunakan email yang Anda gunakan sebagai admin
+            // Tambahkan beberapa email admin jika perlu
+            const adminEmails = ['admin@anime.com', 'indorsari24@gmail.com', 'bimadev77@gmail.com'];
+            
+            // Tentukan role berdasarkan email atau parameter isAdmin
+            const userRole = isAdmin || adminEmails.includes(user.email) ? 'admin' : 'user';
+            console.log(`Membuat profil dengan role: ${userRole} untuk email: ${user.email}`);
+            
+            const { error } = await supabaseClient
+              .from('profiles')
+              .insert([
+                { 
+                  id: user.id, 
+                  username: user.user_metadata?.username || user.email, 
+                  role: userRole
+                }
+              ]);
+            
+            if (error) throw error;
+            console.log('Profil user berhasil dibuat');
+            return true;
+          } catch (error) {
+            console.error('Error creating user profile:', error.message);
+            return false;
+          }
+        }
+        
+        // Fungsi untuk mendapatkan user saat ini
+        function getCurrentUser() {
+          return currentUser;
+        }
+        
+        // ========== SUPABASE ANIME CRUD FUNCTIONS ==========
+        
+        // Fungsi untuk mengambil anime dari Supabase
+        async function fetchAnimesFromSupabase() {
+            try {
+                console.log('Mengambil data anime dari Supabase...', new Date().toLocaleTimeString());
+                const { data, error } = await supabaseClient
+                    .from('animes')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.error('Error Supabase:', error);
+                    throw error;
+                }
+                
+                if (!data) {
+                    console.warn('Tidak ada data yang dikembalikan dari Supabase');
+                    return [];
+                }
+                
+                console.log('Data anime berhasil diambil:', data.length, 'entries');
+                console.log('ID anime yang tersedia:', data.map(a => a.id).join(', '));
+                return data;
+            } catch (error) {
+                console.error('Error mengambil anime:', error.message);
+                alert('Terjadi kesalahan saat mengambil data anime. Silakan refresh halaman.');
+                return [];
+            }
+        }
+        
+        // Fungsi untuk menambahkan anime ke Supabase
+        async function addAnimeToSupabase(anime) {
+            try {
+                console.log('Menambahkan anime ke Supabase:', anime.title);
+                const { data, error } = await supabaseClient
+                    .from('animes')
+                    .insert([{ 
+                        title: anime.title,
+                        description: anime.description,
+                        image: anime.image,
+                        episodes: anime.episodes,
+                        status: anime.status,
+                        rating: anime.rating,
+                        genres: anime.genres,
+                        facebook_link: anime.facebook_link,
+                        created_by: currentUser?.id
+                    }])
+                    .select();
+                
+                if (error) throw error;
+                
+                console.log('Anime berhasil ditambahkan dengan ID:', data[0].id);
+                return { success: true, data: data[0] };
+            } catch (error) {
+                console.error('Error menambahkan anime:', error.message);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // Fungsi untuk menghapus anime dari Supabase
+        async function deleteAnimeFromSupabase(id) {
+            try {
+                console.log('======= MENGHAPUS ANIME =======');
+                console.log('Menghapus anime dengan ID:', id);
+                
+                // 1. Periksa apakah ada komentar terkait anime ini
+                const { data: comments, error: commentsError } = await supabaseClient
+                    .from('comments')
+                    .select('id')
+                    .eq('anime_id', id);
+                
+                if (commentsError) {
+                    console.warn('Error saat memeriksa komentar:', commentsError.message);
+                } else if (comments && comments.length > 0) {
+                    console.log(`Ditemukan ${comments.length} komentar terkait anime ini, komentar akan dihapus otomatis dengan CASCADE`);
+                }
+                
+                // 2. Hapus anime dari database
+                // Catatan: Jika konfigurasi ON DELETE CASCADE sudah diterapkan,
+                // komentar terkait akan ikut terhapus otomatis
+                const { error } = await supabaseClient
+                    .from('animes')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) {
+                    // Jika error mungkin karena masalah foreign key constraint
+                    if (error.code === '23503') { // foreign key violation
+                        console.error('Error foreign key constraint, mencoba hapus komentar terlebih dahulu');
+                        
+                        // Hapus komentar secara manual jika CASCADE belum diterapkan
+                        const { error: deleteCommentsError } = await supabaseClient
+                            .from('comments')
+                            .delete()
+                            .eq('anime_id', id);
+                            
+                        if (deleteCommentsError) {
+                            throw new Error(`Gagal menghapus komentar: ${deleteCommentsError.message}`);
+                        }
+                        
+                        // Coba hapus anime lagi setelah komentar dihapus
+                        const { error: secondDeleteError } = await supabaseClient
+                            .from('animes')
+                            .delete()
+                            .eq('id', id);
+                            
+                        if (secondDeleteError) throw secondDeleteError;
+                    } else {
+                        throw error;
+                    }
+                }
+                
+                console.log('Anime berhasil dihapus beserta semua komentarnya');
+                console.log('======= SELESAI MENGHAPUS ANIME =======');
+                return { success: true };
+            } catch (error) {
+                console.error('Error menghapus anime:', error.message);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // Fungsi untuk update anime di Supabase
+        async function updateAnimeInSupabase(id, updates) {
+            try {
+                console.log('Mengupdate anime dengan ID:', id);
+                const { data, error } = await supabaseClient
+                    .from('animes')
+                    .update(updates)
+                    .eq('id', id)
+                    .select();
+                
+                if (error) throw error;
+                
+                console.log('Anime berhasil diupdate');
+                return { success: true, data: data[0] };
+            } catch (error) {
+                console.error('Error mengupdate anime:', error.message);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // Fungsi untuk mendeteksi perubahan status autentikasi
+        function setupAuthListener(callback) {
+          return supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (session) {
+              currentUser = session.user;
+            } else {
+              currentUser = null;
+            }
+            
+            callback(event, currentUser);
+          });
+        }
+        
+        // Data Management
+        let animeData = [
+            {
+                id: 1,
+                title: "Kimetsu no Yaiba",
+                genres: ["Action", "Supernatural"],
+                description: "Seorang anak laki-laki berjuang melawan iblis untuk menyelamatkan adik perempuannya yang telah berubah menjadi iblis. Perjalanan epik mereka dalam dunia yang penuh dengan pemburu iblis dan makhluk supernatural.",
+                image: "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect fill='%23e63946' width='300' height='200'/%3E%3Ctext fill='%23ffffff' font-family='Arial' font-size='24' x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'%3EKimetsu no Yaiba%3C/text%3E%3C/svg%3E",
+                episodes: 26,
+                status: "Ongoing",
+                rating: 4.8,
+                comments: [
+                    {
+                        id: 1,
+                        author: "Admin",
+                        text: "Anime ini sangat direkomendasikan untuk fans action dan supernatural!",
+                        date: "2025-01-10T14:30:00",
+                        isAdmin: true
+                    },
+                    {
+                        id: 2,
+                        author: "Pengguna1",
+                        text: "Saya suka animasinya, sangat detail dan indah!",
+                        date: "2025-01-12T09:15:00",
+                        isAdmin: false
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "Jujutsu Kaisen",
+                genres: ["Action", "Horror"],
+                description: "Cerita tentang penyihir kutukan yang bertarung melawan roh jahat untuk melindungi manusia. Mengikuti petualangan Yuji Itadori yang tanpa sengaja menelan jari Sukuna, Raja Kutukan.",
+                image: "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect fill='%233a86ff' width='300' height='200'/%3E%3Ctext fill='%23ffffff' font-family='Arial' font-size='24' x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'%3EJujutsu Kaisen%3C/text%3E%3C/svg%3E",
+                episodes: 24,
+                status: "Finished",
+                rating: 4.7,
+                comments: [
+                    {
+                        id: 1,
+                        author: "Pengguna2",
+                        text: "Karakter Gojo sangat keren!",
+                        date: "2025-01-15T16:45:00",
+                        isAdmin: false
+                    }
+                ]
+            }
+        ];
+
+        let availableGenres = ["Action", "Adventure", "Comedy", "Drama", "Fantasy", 
+                              "Horror", "Mystery", "Romance", "Sci-Fi", "Supernatural", 
+                              "Thriller"];
+
+        // App State - Menggunakan window agar dapat diakses secara global
+        window.isAdmin = false;
+        window.isLoggedIn = false;
+        window.currentUser = null; // Digunakan oleh Supabase Auth dan sistem aplikasi
+        let currentView = 'grid'; // 'grid' or 'table'
+        const ADMIN_WHATSAPP = "628388392178";
+        const ANIME_INQUIRIES = "62895355541144";
+        let darkMode = JSON.parse(localStorage.getItem('darkMode') || 'false');
+
+        // DOM Elements
+        const animeGridEl = document.getElementById('animeGrid');
+        const animeTableBodyEl = document.getElementById('animeTableBody');
+        const animeTableContainerEl = document.getElementById('animeTableContainer');
+        const facebookHeaderEl = document.getElementById('facebookHeader');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const genreFilter = document.getElementById('genreFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const resetBtn = document.getElementById('resetBtn');
+        const authBtn = document.getElementById('authBtn');
+        const authBtnText = document.getElementById('authBtnText');
+        const addAnimeBtn = document.getElementById('addAnimeBtn');
+        const manageGenresBtn = document.getElementById('manageGenresBtn');
+        const animeModal = document.getElementById('animeModal');
+        const addAnimeModal = document.getElementById('addAnimeModal');
+        const loginModal = document.getElementById('loginModal');
+        const manageGenresModal = document.getElementById('manageGenresModal');
+        const modalContent = document.getElementById('modalContent');
+        const addAnimeForm = document.getElementById('addAnimeForm');
+        const loginPageBtn = document.getElementById('loginPageBtn');
+        const loginError = document.getElementById('loginError');
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = themeToggle.querySelector('i');
+        const genreTagsContainer = document.getElementById('genreTagsContainer');
+        const newGenreInput = document.getElementById('newGenreInput');
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        const contactAdminBtn = document.getElementById('contactAdminBtn');
+        const adminGenresList = document.getElementById('adminGenresList');
+        const closeBtns = document.querySelectorAll('.close-btn');
+        
+        // Function untuk truncate text
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+        
+        // Function untuk format tanggal
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            return new Date(dateString).toLocaleDateString('id-ID', options);
+        }
+
+        function displayAnimeList(animes) {
+            // Clear existing content
+            animeGridEl.innerHTML = '';
+            animeTableBodyEl.innerHTML = '';
+            
+            if (animes.length === 0) {
+                animeGridEl.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem;">Tidak ada anime yang ditemukan</p>';
+                animeTableBodyEl.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem;">Tidak ada anime yang ditemukan</td></tr>';
+                return;
+            }
+            
+            // Update Facebook header visibility
+            facebookHeaderEl.style.display = isAdmin ? 'table-cell' : 'none';
+            
+            // Display in both grid and table views
+            displayGridView(animes);
+            displayTableView(animes);
+        }
+
+        function displayGridView(animes) {
+            animes.forEach(anime => {
+                const animeCard = document.createElement('div');
+                animeCard.className = 'anime-card';
+                animeCard.setAttribute('data-anime-id', anime.id);
+                
+                // Tambahkan tombol Facebook jika link tersedia
+                const facebookButton = anime.facebook_link ? 
+                    `<a href="${anime.facebook_link}" target="_blank" class="facebook-btn"><i class="fab fa-facebook"></i> Facebook</a>` : '';
+                
+                animeCard.innerHTML = `
+                    <div class="anime-header">
+                        <h3 class="anime-title">${anime.title}</h3>
+                        <span class="anime-status ${anime.status.toLowerCase()}"><i class="${anime.status === 'Ongoing' ? 'fas fa-spinner' : 'fas fa-check-circle'}"></i> ${anime.status}</span>
+                    </div>
+                    <img src="${anime.image}" alt="${anime.title}" class="anime-image">
+                    <div class="anime-body">
+                        <div class="anime-genres">
+                            ${anime.genres.map(genre => `<span class="anime-genre">${genre}</span>`).join('')}
+                        </div>
+                        <div class="anime-info">
+                            <div class="anime-info-item">
+                                <i class="fas fa-film"></i> ${anime.episodes ? anime.episodes + ' episode' : 'TBA'}
+                            </div>
+                            <div class="anime-info-item">
+                                <i class="fas fa-star"></i> ${anime.rating}
+                            </div>
+                        </div>
+                        <p class="anime-description">${truncateText(anime.description, 100)}</p>
+                        <div class="anime-actions">
+                            <button class="detail-btn" onclick="showAnimeDetails('${anime.id}')"><i class="fas fa-info-circle"></i> Detail</button>
+                            ${facebookButton}
+                            ${isAdmin ? `<button class="delete-btn" onclick="confirmDeleteAnime('${anime.id}')"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                    </div>
+                `;
+                animeGridEl.appendChild(animeCard);
+            });
+        }
+
+        function displayTableView(animes) {
+            animes.forEach(anime => {
+                const row = document.createElement('tr');
+                
+                // Generate Facebook share link
+                const shareLink = `${window.location.origin}${window.location.pathname}?anime=${anime.id}`;
+                const shareText = `Check out ${anime.title} - ${anime.description.substring(0, 50)}...`;
+                const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}&quote=${encodeURIComponent(shareText)}`;
+                
+                row.innerHTML = `
+                    <td>
+                        <strong>${anime.title}</strong>
+                        <p class="anime-description">${anime.description.substring(0, 50)}...</p>
+                    </td>
+                    <td>
+                        <span class="anime-status ${anime.status.toLowerCase()}">
+                            <i class="fas ${anime.status === 'Ongoing' ? 'fa-spinner' : 'fa-check-circle'}"></i>
+                            ${anime.status}
+                        </span>
+                    </td>
+                    <td class="anime-genres">
+                        ${anime.genres.map(genre => {
+                            const isAdminGenre = genre.startsWith('Admin: ');
+                            return `<span class="anime-genre ${isAdminGenre ? 'admin-genre' : ''}">
+                                ${genre}
+                                ${isAdmin && isAdminGenre ? `<button class="delete-genre-btn" onclick="deleteAdminGenre('${genre}', event)" aria-label="Delete genre"><i class="fas fa-times"></i></button>` : ''}
+                            </span>`;
+                        }).join('')}
+                    </td>
+                    ${isAdmin ? `
+                    <td>
+                        <a href="${facebookShareUrl}" target="_blank" class="facebook-share-btn">
+                            <i class="fab fa-facebook"></i> Share
+                        </a>
+                    </td>
+                    ` : ''}
+                `;
+                
+                animeTableBodyEl.appendChild(row);
+            });
+        }
+
+        function updateGenreFilter() {
+            genreFilter.innerHTML = '<option value="">Semua Genre</option>';
+            availableGenres.forEach(genre => {
+                genreFilter.innerHTML += `<option value="${genre}">${genre}</option>`;
+            });
+        }
+
+        function updateGenreTags() {
+            genreTagsContainer.innerHTML = '';
+            availableGenres.forEach(genre => {
+                genreTagsContainer.innerHTML += `
+                    <span class="genre-tag anime-genre" data-genre="${genre}" tabindex="0">${genre}</span>
+                `;
+            });
+            
+            document.querySelectorAll('.genre-tag').forEach(tag => {
+                tag.addEventListener('click', function() {
+                    this.classList.toggle('selected');
+                    updateSelectedGenres();
+                });
+                
+                tag.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.classList.toggle('selected');
+                        updateSelectedGenres();
+                    }
+                });
+            });
+        }
+
+        function updateSelectedGenres() {
+            const selectedGenres = Array.from(document.querySelectorAll('.genre-tag.selected'))
+                                     .map(tag => tag.dataset.genre);
+            document.getElementById('newAnimeGenres').value = JSON.stringify(selectedGenres);
+        }
+
+        async function addNewGenreToSupabase(genreName) {
+            try {
+                console.log('Menambahkan genre ke Supabase:', genreName);
+                
+                // Cek apakah genre sudah ada di Supabase
+                const { data: existingGenre, error: checkError } = await supabaseClient
+                    .from('genres')
+                    .select('name')
+                    .eq('name', genreName)
+                    .maybeSingle();
+                    
+                if (checkError) {
+                    console.error('Error memeriksa genre:', checkError);
+                    return false;
+                }
+                
+                // Jika genre sudah ada, tidak perlu menambahkan lagi
+                if (existingGenre) {
+                    console.log('Genre sudah ada di database:', genreName);
+                    return true;
+                }
+                
+                // Tambahkan genre baru ke Supabase
+                const { data, error } = await supabaseClient
+                    .from('genres')
+                    .insert([{ name: genreName, created_by: currentUser?.id }])
+                    .select();
+                
+                if (error) {
+                    console.error('Error menambahkan genre:', error);
+                    return false;
+                }
+                
+                console.log('Genre berhasil ditambahkan ke Supabase:', data);
+                return true;
+            } catch (error) {
+                console.error('Error menambahkan genre ke Supabase:', error);
+                return false;
+            }
+        }
+        
+        async function fetchGenresFromSupabase() {
+            try {
+                console.log('Mengambil daftar genre dari Supabase...');
+                const { data, error } = await supabaseClient
+                    .from('genres')
+                    .select('name')
+                    .order('name');
+                
+                if (error) {
+                    console.error('Error mengambil genre:', error);
+                    return [];
+                }
+                
+                // Ekstrak nama genre dari hasil query
+                const genres = data.map(g => g.name);
+                console.log('Berhasil mengambil', genres.length, 'genre dari Supabase');
+                return genres;
+            } catch (error) {
+                console.error('Error mengambil genre dari Supabase:', error);
+                return [];
+            }
+        }
+        
+        // Fungsi wrapper yang memastikan genre disimpan di Supabase dan di lokal
+        async function addNewGenre(genre) {
+            const genreName = typeof genre === 'string' ? genre : genre.trim();
+            if (!genreName || genreName.length < 2) return false;
+            
+            // Tambahkan ke Supabase jika user adalah admin
+            if (isAdmin) {
+                const success = await addNewGenreToSupabase(genreName);
+                if (!success) {
+                    alert('Gagal menambahkan genre ke database. Silakan coba lagi.');
+                    return false;
+                }
+            }
+            
+            // Deduplication untuk lokal
+            if (!availableGenres.includes(genreName)) {
+                availableGenres.push(genreName);
+                updateGenreFilter();
+                updateGenreTags();
+                return true;
+            }
+            return false;
+        }
+
+        function filterAnime() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedGenre = genreFilter.value;
+            const selectedStatus = statusFilter.value;
+            
+            const filteredAnime = animeData.filter(anime => {
+                const matchesSearch = anime.title.toLowerCase().includes(searchTerm) || 
+                                    anime.description.toLowerCase().includes(searchTerm);
+                const matchesGenre = selectedGenre === '' || anime.genres.includes(selectedGenre);
+                const matchesStatus = selectedStatus === '' || anime.status === selectedStatus;
+                
+                return matchesSearch && matchesGenre && matchesStatus;
+            });
+            
+            displayAnimeList(filteredAnime);
+        }
+
+        // Simpan data ke localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('availableGenres', JSON.stringify(availableGenres));
+            localStorage.setItem('darkMode', darkMode);
+        }
+
+        // Ambil data dari localStorage
+        function loadFromLocalStorage() {
+            // Ambil genre yang tersedia dari localStorage
+            const savedGenres = localStorage.getItem('availableGenres');
+            if (savedGenres) {
+                availableGenres = JSON.parse(savedGenres);
+            }
+            
+            // Ambil mode tema dari localStorage
+            const savedDarkMode = localStorage.getItem('darkMode');
+            if (savedDarkMode === 'true') {
+                toggleDarkMode(true);
+            }
+        }
+
+        function toggleDarkMode(force = null) {
+            darkMode = force !== null ? force : !darkMode;
+            
+            if (darkMode) {
+                document.body.classList.add('dark-mode');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            } else {
+                document.body.classList.remove('dark-mode');
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+            }
+            
+            saveToLocalStorage();
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function toggleView(view) {
+            currentView = view;
+            if (view === 'grid') {
+                animeGridEl.style.display = 'grid';
+                animeTableContainerEl.style.display = 'none';
+                gridViewBtn.classList.add('active');
+                tableViewBtn.classList.remove('active');
+            } else {
+                animeGridEl.style.display = 'none';
+                animeTableContainerEl.style.display = 'block';
+                gridViewBtn.classList.remove('active');
+                tableViewBtn.classList.add('active');
+            }
+        }
+
+        // Genre Management Functions
+        function showManageGenresModal() {
+            adminGenresList.innerHTML = '';
+            
+            availableGenres.forEach(genre => {
+                const genreItem = document.createElement('div');
+                genreItem.className = `genre-item ${genre.startsWith('Admin: ') ? 'admin-genre' : ''}`;
+                genreItem.innerHTML = `
+                    <span>${genre}</span>
+                    <button class="genre-delete-btn" onclick="deleteGenre('${genre}')" aria-label="Delete genre">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                adminGenresList.appendChild(genreItem);
+            });
+            
+            manageGenresModal.style.display = 'flex';
+        }
+
+        window.deleteGenre = function(genreName) {
+            if (!isAdmin) return;
+            
+            if (confirm(`Hapus genre "${genreName}"? Anime yang menggunakan genre ini akan kehilangan genre tersebut.`)) {
+                // Remove from available genres
+                availableGenres = availableGenres.filter(g => g !== genreName);
+                
+                // Remove from all anime
+                animeData.forEach(anime => {
+                    anime.genres = anime.genres.filter(g => g !== genreName);
+                });
+                
+                // Update UI
+                updateGenreFilter();
+                updateGenreTags();
+                displayAnimeList(animeData);
+                showManageGenresModal();
+                saveToLocalStorage();
+            }
+        };
+
+        window.deleteAdminGenre = function(genreName, event) {
+            event.stopPropagation();
+            deleteGenre(genreName);
+        };
+
+        // Anime Details and Comment Functions
+        window.showAnimeDetails = async function(animeId) {
+            console.log('======= MENAMPILKAN DETAIL ANIME =======');
+            console.log('Menampilkan detail anime dengan ID:', animeId);
+            console.log('Tipe data ID:', typeof animeId);
+            console.log('Data anime yang tersedia:', animeData.length, 'item');
+            
+            // Jika tidak ada data anime atau jumlahnya 0, muat ulang dari Supabase
+            if (!animeData || animeData.length === 0) {
+                console.log('Tidak ada data anime, mencoba memuat ulang dari Supabase...');
+                const freshData = await fetchAnimesFromSupabase();
+                if (freshData && freshData.length > 0) {
+                    console.log('Berhasil memuat ulang anime dari Supabase:', freshData.length, 'item');
+                    animeData = freshData;
+                    displayAnimeList(animeData);
+                }
+            }
+            
+            // Cari anime berdasarkan ID - UUID dari Supabase adalah string
+            let anime = animeData.find(a => String(a.id) === String(animeId));
+            
+            // Jika masih tidak ditemukan, coba muat anime secara spesifik
+            if (!anime) {
+                console.warn('Anime dengan ID', animeId, 'tidak ditemukan dalam data, mencoba mencari langsung di Supabase...');
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('animes')
+                        .select('*')
+                        .eq('id', animeId)
+                        .single();
+                    
+                    if (data && !error) {
+                        console.log('Berhasil mendapatkan anime langsung dari Supabase:', data.title);
+                        anime = data;
+                    } else {
+                        throw new Error('Anime tidak ditemukan di database');
+                    }
+                } catch (error) {
+                    console.error('Error mengambil anime dari Supabase:', error);
+                    console.log('ID anime yang tersedia:', animeData.map(a => a.id));
+                    alert('Anime tidak ditemukan. Silakan coba lagi.');
+                    return;
+                }
+            }
+            
+            // Ambil komentar dari tabel comments terpisah
+            try {
+                console.log('Mengambil komentar untuk anime ID:', animeId);
+                const { data: comments, error: commentsError } = await supabaseClient
+                    .from('comments')
+                    .select('*')
+                    .eq('anime_id', animeId)
+                    .order('date', { ascending: false });
+                
+                if (commentsError) {
+                    console.error('Error mengambil komentar:', commentsError);
+                } else if (comments && comments.length > 0) {
+                    console.log('Berhasil mendapatkan', comments.length, 'komentar');
+                    // Format komentar untuk kompatibilitas dengan format yang diharapkan UI
+                    const formattedComments = comments.map(comment => ({
+                        id: comment.id,
+                        author: comment.author,
+                        text: comment.text,
+                        date: comment.date,
+                        isAdmin: comment.is_admin
+                    }));
+                    anime.comments = formattedComments;
+                } else {
+                    console.log('Tidak ada komentar untuk anime ini');
+                    anime.comments = [];
+                }
+            } catch (e) {
+                console.error('Error saat mengambil komentar:', e);
+                anime.comments = anime.comments || [];
+            }
+            
+            if (!anime) {
+                console.error('Anime dengan ID', animeId, 'tidak ditemukan setelah semua percobaan');
+                console.log('ID anime yang tersedia:', animeData.map(a => a.id));
+                alert('Anime tidak ditemukan. Silakan coba lagi.');
+                return;
+            }
+            
+            console.log('Anime ditemukan:', anime.title);
+            
+            // Initialize comments if not exists
+            if (!anime.comments) {
+                anime.comments = [];
+            }
+            
+            // Generate shareable link
+            const shareLink = `${window.location.origin}${window.location.pathname}?anime=${animeId}`;
+            const shareText = `Check out this anime: ${anime.title} - ${anime.description.substring(0, 100)}...`;
+            
+            modalContent.innerHTML = `
+                <h2>${anime.title}</h2>
+                <div style="display: flex; align-items: center; gap: 1rem; margin: 1rem 0;">
+                    <span class="anime-status ${anime.status.toLowerCase()}">
+                        <i class="fas ${anime.status === 'Ongoing' ? 'fa-spinner' : 'fa-check-circle'}"></i>
+                        ${anime.status}
+                    </span>
+                    ${anime.episodes ? `<span><i class="fas fa-list-ol"></i> ${anime.episodes} Episode</span>` : ''}
+                    <span><i class="fas fa-star"></i> ${anime.rating}/5</span>
+                </div>
+                <img src="${anime.image}" alt="${anime.title}" style="width: 100%; max-height: 300px; object-fit: contain; margin: 1rem 0; border-radius: 8px;">
+                <p><strong><i class="fas fa-tags"></i> Genre:</strong> ${anime.genres.map(g => {
+                    const isAdminGenre = g.startsWith('Admin: ');
+                    return `<span class="anime-genre ${isAdminGenre ? 'admin-genre' : ''}">
+                        ${g}
+                        ${isAdmin && isAdminGenre ? `<button class="delete-genre-btn" onclick="deleteAdminGenre('${g}', event)" aria-label="Delete genre"><i class="fas fa-times"></i></button>` : ''}
+                    </span>`;
+                }).join(' ')}</p>
+                <p><strong><i class="fas fa-align-left"></i> Deskripsi:</strong> ${anime.description}</p>
+                
+                ${isAdmin ? `
+                <div class="share-controls">
+                    <input type="text" id="shareLink-${anime.id}" class="share-input" value="${shareLink}" readonly>
+                    <button class="share-btn" onclick="copyShareLink(${anime.id})">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                    <button class="share-btn" onclick="shareToFacebook(${anime.id})">
+                        <i class="fab fa-facebook"></i> Share
+                    </button>
+                </div>
+                <p class="copied-message" id="copiedMessage-${anime.id}">Link berhasil disalin!</p>
+                ` : ''}
+                
+                <div class="comments-section">
+                    <div class="comments-title">
+                        <i class="fas fa-comments"></i> Komentar (${anime.comments ? anime.comments.length : 0})
+                    </div>
+                    <div class="comment-list">
+                        ${anime.comments && anime.comments.length > 0 ? 
+                            anime.comments.map(comment => `
+                                <div class="comment ${comment.isAdmin ? 'comment-admin' : ''}">
+                                    ${isAdmin ? `<button class="delete-comment-btn" onclick="deleteComment('${anime.id}', '${comment.id}')" aria-label="Delete comment"><i class="fas fa-trash"></i></button>` : ''}
+                                    <div class="comment-author ${comment.isAdmin ? 'admin' : ''}">
+                                        ${comment.isAdmin ? '<i class="fas fa-user-shield"></i>' : '<i class="fas fa-user"></i>'}
+                                        ${comment.author}
+                                    </div>
+                                    <div class="comment-text">${comment.text}</div>
+                                    <div class="comment-date">
+                                        <i class="far fa-clock"></i> ${formatDate(comment.date)}
+                                    </div>
+                                </div>
+                            `).join('') : 
+                            '<p style="text-align: center; opacity: 0.7;">Belum ada komentar. Jadilah yang pertama!</p>'}
+                    </div>
+                    <form id="commentForm-${anime.id}" class="comment-form" onsubmit="addComment('${anime.id}'); return false;">
+                        ${!isAdmin ? `
+                            <div class="form-group">
+                                <label for="commentAuthor-${anime.id}">Nama</label>
+                                <input type="text" id="commentAuthor-${anime.id}" placeholder="Nama Anda" required>
+                            </div>` : ''}
+                        <div class="form-group">
+                            <label for="commentText-${anime.id}">Komentar</label>
+                            <textarea id="commentText-${anime.id}" placeholder="Tulis komentar Anda di sini..." required></textarea>
+                        </div>
+                        <button type="submit" class="submit-comment-btn">
+                            <i class="fas fa-paper-plane"></i> Kirim Komentar
+                        </button>
+                    </form>
+                </div>
+                
+                <button class="contact-admin-btn" onclick="contactAdmin('Pertanyaan tentang anime: ${anime.title}', true)">
+                    <i class="fab fa-whatsapp"></i> Tanya Admin tentang Anime Ini
+                </button>
+            `;
+            
+            animeModal.style.display = 'flex';
+            // Auto-focus comment textarea when modal opens
+            setTimeout(() => {
+                const textarea = document.getElementById(`commentText-${anime.id}`);
+                if (textarea) textarea.focus();
+            }, 100);
+        };
+
+        window.addComment = async function(animeId) {
+            console.log('======= MENAMBAHKAN KOMENTAR =======');
+            console.log('Menambahkan komentar untuk anime ID:', animeId);
+            const commentText = document.getElementById(`commentText-${animeId}`).value.trim();
+            if (!commentText) {
+                alert('Silakan masukkan komentar Anda');
+                return;
+            }
+            
+            // Cari anime berdasarkan ID (pastikan perbandingan string-to-string)
+            let anime = animeData.find(a => String(a.id) === String(animeId));
+            
+            // Jika anime tidak ditemukan di data lokal, coba ambil langsung dari Supabase
+            if (!anime) {
+                console.warn('Anime tidak ditemukan di data lokal, mencoba ambil dari Supabase...');
+                try {
+                    // Muat ulang data anime dari Supabase
+                    const freshAnimeData = await fetchAnimesFromSupabase();
+                    if (freshAnimeData && freshAnimeData.length > 0) {
+                        console.log('Berhasil memuat ulang anime dari Supabase:', freshAnimeData.length, 'item');
+                        animeData = freshAnimeData;
+                        displayAnimeList(animeData);
+                        anime = animeData.find(a => String(a.id) === String(animeId));
+                    }
+                    
+                    // Jika masih tidak ditemukan, coba cari anime spesifik
+                    if (!anime) {
+                        console.warn('Mencoba mencari anime langsung dengan ID:', animeId);
+                        const { data, error } = await supabaseClient
+                            .from('animes')
+                            .select('*')
+                            .eq('id', animeId)
+                            .single();
+                        
+                        if (data && !error) {
+                            console.log('Berhasil mendapatkan anime langsung dari Supabase:', data.title);
+                            anime = data;
+                        } else {
+                            throw new Error('Anime tidak ditemukan di database');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error mengambil anime dari Supabase:', error);
+                    alert('Anime tidak ditemukan. Silakan refresh halaman dan coba lagi.');
+                    return;
+                }
+            }
+            
+            // Pastikan array comments ada di anime lokal
+            if (!anime.comments) {
+                anime.comments = [];
+            }
+            
+            const author = window.isAdmin ? "Admin" : document.getElementById(`commentAuthor-${animeId}`).value.trim();
+            if (!author && !window.isAdmin) {
+                alert('Silakan masukkan nama Anda');
+                return;
+            }
+            
+            // Tampilkan loading state
+            const submitBtn = document.querySelector(`#commentForm-${animeId} button[type="submit"]`);
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+            submitBtn.disabled = true;
+            
+            try {
+                console.log('Status login saat menambahkan komentar:', { isLoggedIn: window.isLoggedIn, isAdmin: window.isAdmin });
+                
+                // Buat objek komentar baru
+                let newComment;
+                
+                // Periksa apakah user login atau tidak
+                if (window.isLoggedIn) {
+                    // Jika login, gunakan user_id dan is_admin
+                    newComment = {
+                        anime_id: animeId,       // ID anime yang dikomentari
+                        author: author,          // Nama pengirim komentar
+                        text: commentText,       // Isi komentar
+                        is_admin: window.isAdmin, // Apakah admin atau bukan
+                        user_id: window.currentUser ? window.currentUser.id : null // ID user jika login
+                    };
+                } else {
+                    // Jika tidak login, jangan gunakan user_id (karena akan menyebabkan error referensi)
+                    newComment = {
+                        anime_id: animeId,    // ID anime yang dikomentari
+                        author: author,       // Nama pengirim komentar
+                        text: commentText,    // Isi komentar
+                        is_admin: false       // Tidak login = bukan admin
+                    };
+                }
+                
+                console.log('Menyimpan komentar ke tabel comments untuk anime:', anime.title);
+                
+                // Simpan komentar ke tabel comments terpisah
+                const { data: insertedComment, error: insertError } = await supabaseClient
+                    .from('comments')
+                    .insert(newComment)
+                    .select(); // Dapatkan data yang telah dimasukkan
+                    
+                if (insertError) {
+                    console.error('Error menyimpan komentar ke Supabase:', insertError);
+                    throw insertError;
+                }
+                
+                console.log('Komentar berhasil disimpan:', insertedComment);
+                
+                // Tambahkan komentar ke array lokal untuk ditampilkan langsung
+                const newLocalComment = {
+                    id: insertedComment[0].id,
+                    author: author,
+                    text: commentText,
+                    date: insertedComment[0].date,
+                    isAdmin: window.isAdmin
+                };
+                
+                // Tambahkan komentar baru ke awal array
+                anime.comments = [newLocalComment, ...anime.comments];
+                
+                // Reset form
+                document.getElementById(`commentText-${animeId}`).value = '';
+                if (!window.isAdmin) {
+                    document.getElementById(`commentAuthor-${animeId}`).value = '';
+                }
+                
+                // Refresh tampilan
+                console.log('Komentar berhasil ditambahkan, memperbarui tampilan...');
+                await showAnimeDetails(animeId);
+                
+                // Kembalikan tombol ke normal
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+                
+                console.log('======= SELESAI MENAMBAHKAN KOMENTAR =======');
+            } catch (error) {
+                console.error('Error menambahkan komentar:', error);
+                alert('Terjadi kesalahan saat menambahkan komentar. Silakan coba lagi.');
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            }
+        };
+
+        window.deleteComment = async function(animeId, commentId) {
+            // Periksa apakah pengguna adalah admin
+            if (!window.isAdmin) {
+                alert('Anda harus memiliki hak akses admin untuk menghapus komentar.');
+                return;
+            }
+            
+            if (confirm('Apakah Anda yakin ingin menghapus komentar ini?')) {
+                console.log('======= MENGHAPUS KOMENTAR =======');
+                console.log('Menghapus komentar dengan ID:', commentId, 'dari anime ID:', animeId);
+                
+                try {
+                    // Hapus komentar langsung dari tabel comments
+                    const { error } = await supabaseClient
+                        .from('comments')
+                        .delete()
+                        .eq('id', commentId);
+                    
+                    if (error) {
+                        console.error('Error menghapus komentar dari Supabase:', error);
+                        throw error;
+                    }
+                    
+                    console.log('Komentar berhasil dihapus dari database');
+                    
+                    // Cari anime berdasarkan ID untuk update UI
+                    const anime = animeData.find(a => String(a.id) === String(animeId));
+                    if (anime) {
+                        // Update komentar di data lokal jika ada
+                        if (anime.comments) {
+                            anime.comments = anime.comments.filter(comment => String(comment.id) !== String(commentId));
+                        }
+                    }
+                    
+                    // Refresh tampilan untuk menampilkan komentar terbaru
+                    console.log('Memperbarui tampilan setelah menghapus komentar...');
+                    await showAnimeDetails(animeId);
+                    
+                    console.log('======= SELESAI MENGHAPUS KOMENTAR =======');
+                } catch (error) {
+                    console.error('Error menghapus komentar:', error);
+                    alert('Terjadi kesalahan saat menghapus komentar. Silakan coba lagi.');
+                }
+            }
+        };
+
+        window.deleteAnime = function(animeId) {
+            if (!isAdmin) return;
+            
+            if (confirm('Apakah Anda yakin ingin menghapus anime ini?')) {
+                animeData = animeData.filter(anime => anime.id !== animeId);
+                displayAnimeList(animeData);
+                saveToLocalStorage();
+            }
+        };
+
+        // Fungsi untuk konfirmasi hapus anime dengan Supabase
+        async function confirmDeleteAnime(id) {
+            if (!isAdmin) {
+                alert('Anda harus memiliki hak akses admin untuk menghapus anime.');
+                return;
+            }
+            
+            if (confirm('Yakin ingin menghapus anime ini?')) {
+                try {
+                    const result = await deleteAnimeFromSupabase(id);
+                    
+                    if (result.success) {
+                        // Ambil data anime terbaru dari Supabase
+                        const latestAnimeData = await fetchAnimesFromSupabase();
+                        animeData = latestAnimeData;
+                        displayAnimeList(animeData);
+                        alert('Anime berhasil dihapus!');
+                    } else {
+                        alert('Error: ' + result.error);
+                    }
+                } catch (error) {
+                    console.error('Error menghapus anime:', error);
+                    alert('Terjadi kesalahan saat menghapus anime. Silakan coba lagi.');
+                }
+            }
+        };
+        
+        // Fungsi untuk kontak admin
+        window.contactAdmin = function(message = '', isAnimeInquiry = false) {
+            const number = isAnimeInquiry ? ANIME_INQUIRIES : ADMIN_WHATSAPP;
+            const encodedMessage = encodeURIComponent(message);
+            window.open(`https://wa.me/${number}?text=${encodedMessage}`, '_blank');
+        };
+
+        function addNewGenreFromInput() {
+            const genreName = newGenreInput.value.trim();
+            if (!genreName) return;
+            
+            // Tidak lagi menambahkan prefiks "Admin: " pada genre
+            const fullGenreName = genreName;
+            
+            if (addNewGenre(fullGenreName)) {
+                newGenreInput.value = '';
+                alert('Genre baru berhasil ditambahkan!');
+            } else {
+                alert('Genre sudah ada atau nama tidak valid!');
+            }
+        }
+
+        // Facebook Sharing Functions
+        function copyShareLink(animeId) {
+            const shareInput = document.getElementById(`shareLink-${animeId}`);
+            shareInput.select();
+            document.execCommand('copy');
+            
+            const copiedMessage = document.getElementById(`copiedMessage-${animeId}`);
+            copiedMessage.style.display = 'block';
+            setTimeout(() => {
+                copiedMessage.style.display = 'none';
+            }, 2000);
+        }
+
+        function shareToFacebook(animeId) {
+            const anime = animeData.find(a => a.id === animeId);
+            if (!anime) return;
+            
+            const shareLink = `${window.location.origin}${window.location.pathname}?anime=${animeId}`;
+            const shareText = `Check out this anime: ${anime.title} - ${anime.description.substring(0, 100)}...`;
+            
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}&quote=${encodeURIComponent(shareText)}`, '_blank');
+        }
+
+        // Check URL for anime parameter on page load
+        function checkUrlForAnime() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const animeId = urlParams.get('anime');
+            
+            if (animeId) {
+                const anime = animeData.find(a => a.id === parseInt(animeId));
+                if (anime) {
+                    showAnimeDetails(parseInt(animeId));
+                }
+            }
+        }
+
+        // Fungsi untuk memperbarui status autentikasi UI
+        async function updateAuthState(isLoggedIn, isAdminUser) {
+            console.log('======= UPDATE AUTH STATE =======');
+            console.log('updateAuthState dipanggil dengan:', { isLoggedIn, isAdminUser });
+            console.log('currentUser saat ini:', window.currentUser ? window.currentUser.email : 'tidak ada');
+            
+            // FORCE: Double check status admin jika sedang login
+            if (isLoggedIn && window.currentUser) {
+                // Re-verifikasi status admin secara paksa
+                console.log('Re-verifikasi status admin dengan isUserAdmin()...');
+                const adminCheck = await isUserAdmin();
+                if (adminCheck !== isAdminUser) {
+                    console.log(`PENTING: Koreksi status admin dari ${isAdminUser} menjadi ${adminCheck} berdasarkan verifikasi database`);
+                    isAdminUser = adminCheck;
+                }
+            }
+            
+            // Update UI berdasarkan status login
+            if (isLoggedIn) {
+                // Set variabel global
+                window.isLoggedIn = true;
+                
+                // Update UI untuk login
+                authBtnText.innerText = 'Keluar';
+                
+                // Tampilkan tombol Add Anime jika user adalah admin
+                if (isAdminUser) {
+                    // Update variabel global isAdmin
+                    window.isAdmin = true;
+                    
+                    // Update UI untuk admin - PAKSA TAMPILKAN
+                    addAnimeBtn.style.display = 'block';
+                    manageGenresBtn.style.display = 'block';
+                    
+                    // Tambahkan penanda visual admin
+                    document.body.classList.add('admin-mode');
+                    
+                    console.log('Admin login berhasil - UI telah diperbarui, isAdmin = true');
+                    console.log('Status tombol admin: Add Anime = ' + addAnimeBtn.style.display + ', Manage Genres = ' + manageGenresBtn.style.display);
+                } else {
+                    // Update variabel global isAdmin
+                    window.isAdmin = false;
+                    
+                    // Update UI untuk user non-admin
+                    addAnimeBtn.style.display = 'none';
+                    manageGenresBtn.style.display = 'none';
+                    
+                    // Hapus penanda visual admin
+                    document.body.classList.remove('admin-mode');
+                    
+                    console.log('User biasa login - UI telah diperbarui, isAdmin = false');
+                }
+            } else {
+                // Reset variabel global
+                window.isLoggedIn = false;
+                window.isAdmin = false;
+                window.currentUser = null;
+                
+                // Update UI untuk logout
+                authBtnText.innerText = 'Masuk';
+                addAnimeBtn.style.display = 'none';
+                manageGenresBtn.style.display = 'none';
+                
+                // Hapus penanda visual admin
+                document.body.classList.remove('admin-mode');
+                
+                console.log('User logout - UI telah diperbarui');
+            }
+            
+            // Simpan status di localStorage untuk persist state
+            localStorage.setItem('isLoggedIn', JSON.stringify(isLoggedIn));
+            localStorage.setItem('isAdmin', JSON.stringify(isAdminUser));
+            
+            console.log('Status login setelah update: isLoggedIn =', window.isLoggedIn, 'isAdmin =', window.isAdmin);
+            console.log('======= AKHIR UPDATE AUTH STATE =======');
+        }
+        
+        // Fungsi untuk memeriksa status autentikasi Supabase
+        async function checkAuthStatus() {
+            try {
+                console.log('Memeriksa status autentikasi... waktu:', new Date().toLocaleTimeString());
+                const { data, error } = await supabaseClient.auth.getSession();
+                
+                if (error) {
+                    console.error('Error saat getSession:', error.message);
+                    throw error;
+                }
+                
+                if (data && data.session) {
+                    window.currentUser = data.session.user;
+                    console.log('User terautentikasi:', window.currentUser.email);
+                    // Periksa status admin
+                    const admin = await isUserAdmin();
+                    console.log('Status admin:', admin);
+                    // Update state dan UI
+                    await updateAuthState(true, admin);
+                    return { success: true, user: data.session.user };
+                } else {
+                    console.log('Tidak ada sesi aktif');
+                    window.currentUser = null;
+                    await updateAuthState(false, false);
+                    return { success: false, user: null };
+                }
+            } catch (error) {
+                console.error('Error saat memeriksa status autentikasi:', error.message);
+                window.currentUser = null;
+                await updateAuthState(false, false);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // Fungsi untuk menangani autentikasi
+        async function handleAuth() {
+            console.log('======= HANDLE AUTH =======');
+            console.log('handleAuth dipanggil, status login saat ini:', { isLoggedIn: window.isLoggedIn, currentUser: window.currentUser });
+            
+            if (window.currentUser) {
+                // Logout jika sudah login
+                console.log('User sedang login, mencoba logout...');
+                const result = await signOut();
+                if (result.success) {
+                    console.log('Logout berhasil, memperbarui UI...');
+                    await updateAuthState(false, false);
+                    
+                    // Hapus data anime yang dimuat sebelumnya
+                    animeData = [];
+                    displayAnimeList(animeData);
+                    
+                    // Muat ulang data anime untuk pengguna yang tidak login
+                    console.log('Memuat ulang data anime setelah logout...');
+                    const refreshedAnimeData = await fetchAnimesFromSupabase();
+                    if (refreshedAnimeData && refreshedAnimeData.length > 0) {
+                        console.log('Data anime berhasil dimuat ulang setelah logout:', refreshedAnimeData.length, 'item');
+                        animeData = refreshedAnimeData;
+                        displayAnimeList(animeData);
+                    }
+                }
+            } else {
+                // Tampilkan modal login jika belum login
+                console.log('User belum login, menampilkan modal login...');
+                loginModal.style.display = 'flex';
+            }
+            
+            console.log('======= AKHIR HANDLE AUTH =======');
+            // Mencegah default action yang mungkin menyebabkan redirect
+            return false;
+        }
+        
+        // Fungsi untuk redirect ke halaman auth
+        function redirectToAuthPage() {
+            window.location.href = 'auth-ui.html';
+        }
+        
+        // Event Listeners
+        searchBtn.addEventListener('click', filterAnime);
+        
+        // Supabase auth event listeners
+        authBtn.addEventListener('click', function(e) {
+            e.preventDefault(); // Mencegah perilaku default (redirect ke #)
+            handleAuth();
+        });
+        loginPageBtn.addEventListener('click', redirectToAuthPage);
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') filterAnime();
+        });
+        genreFilter.addEventListener('change', filterAnime);
+        statusFilter.addEventListener('change', filterAnime);
+        resetBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            genreFilter.value = '';
+            statusFilter.value = '';
+            filterAnime();
+        });
+        
+        themeToggle.addEventListener('click', () => {
+            toggleDarkMode();
+        });
+        
+        imageUpload.addEventListener('change', handleImageUpload);
+        
+        manageGenresBtn.addEventListener('click', showManageGenresModal);
+        
+        contactAdminBtn.addEventListener('click', () => {
+            contactAdmin('Halo Admin, saya memiliki pertanyaan tentang website anime ini.');
+        });
+        
+        addAnimeBtn.addEventListener('click', () => {
+            addAnimeModal.style.display = 'flex';
+            imagePreview.style.display = 'none';
+            imagePreview.src = '';
+            imageUpload.value = '';
+            document.getElementById('statusOngoing').checked = true;
+            document.querySelectorAll('.genre-tag').forEach(tag => {
+                tag.classList.remove('selected');
+            });
+            document.getElementById('newAnimeTitle').focus();
+        });
+        
+        closeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.closest('.modal').style.display = 'none';
+                loginError.style.display = 'none';
+            });
+        });
+        
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+                loginError.style.display = 'none';
+            }
+        });
+        
+        addAnimeForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Periksa apakah user adalah admin
+            if (!isAdmin) {
+                alert('Anda harus memiliki hak akses admin untuk menambahkan anime.');
+                return;
+            }
+            
+            const fileInput = document.getElementById('imageUpload');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Silakan pilih gambar untuk anime ini');
+                return;
+            }
+            
+            // Tampilkan loading state
+            const submitBtn = addAnimeForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+            submitBtn.disabled = true;
+            
+            try {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const newAnime = {
+                        title: document.getElementById('newAnimeTitle').value,
+                        image: e.target.result,
+                        genres: JSON.parse(document.getElementById('newAnimeGenres').value || '[]'),
+                        episodes: document.getElementById('newAnimeEpisodes').value ? 
+                                parseInt(document.getElementById('newAnimeEpisodes').value) : null,
+                        rating: parseFloat(document.getElementById('newAnimeRating').value),
+                        description: document.getElementById('newAnimeDescription').value,
+                        status: document.querySelector('input[name="status"]:checked').value,
+                        // Tambahkan link Facebook
+                        facebook_link: document.getElementById('newAnimeFacebookLink').value,
+                        comments: []
+                    };
+                    
+                    // Simpan ke Supabase
+                    const result = await addAnimeToSupabase(newAnime);
+                    
+                    if (result.success) {
+                        // Reset form dan tampilan
+                        addAnimeModal.style.display = 'none';
+                        addAnimeForm.reset();
+                        
+                        // Ambil data anime terbaru dari Supabase dan tampilkan
+                        const latestAnimeData = await fetchAnimesFromSupabase();
+                        animeData = latestAnimeData;
+                        displayAnimeList(animeData);
+                        
+                        alert('Anime berhasil ditambahkan!');
+                    } else {
+                        alert('Error: ' + result.error);
+                    }
+                    
+                    // Kembalikan tombol ke normal
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                };
+                
+                reader.readAsDataURL(fileInput.files[0]);
+            } catch (error) {
+                console.error('Error menambahkan anime:', error);
+                alert('Terjadi kesalahan saat menambahkan anime. Silakan coba lagi.');
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            }
+        });
+        
+
+
+        // View toggle buttons
+        gridViewBtn.addEventListener('click', () => toggleView('grid'));
+        tableViewBtn.addEventListener('click', () => toggleView('table'));
+
+        // More event listeners
+        imageUpload.addEventListener('change', handleImageUpload);
+        manageGenresBtn.addEventListener('click', showManageGenresModal);
+        
+        // Function untuk setup listener autentikasi
+        async function setupAuthListener(callback) {
+            try {
+                console.log('Menyiapkan listener untuk perubahan autentikasi');
+                const { data } = await supabaseClient.auth.onAuthStateChange((event, session) => {
+                    console.log('Auth state changed:', event);
+                    if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+                        console.log('Pengguna masuk atau token diperbarui dengan user:', session.user.email);
+                        callback(event, session.user);
+                    } else if (event === 'SIGNED_OUT') {
+                        console.log('Pengguna logout');
+                        callback(event, null);
+                    } else if (event === 'USER_UPDATED') {
+                        console.log('Data pengguna diperbarui');
+                        callback('SIGNED_IN', session.user); // Perlakukan seperti login baru agar UI diperbarui
+                    }
+                });
+                return data;
+            } catch (error) {
+                console.error('Error setting up auth listener:', error);
+            }
+        }
+
+        // Fungsi untuk memaksa pembaruan status admin
+        async function forceUpdateAdminStatus() {
+            console.log('======= PEMAKSAAN STATUS ADMIN =======');
+            
+            if (!window.currentUser) {
+                console.log('Tidak ada user yang sedang login, tidak perlu update status admin');
+                return false;
+            }
+            
+            try {
+                // Cek status admin langsung dari database
+                console.log('Memaksa verifikasi status admin untuk', window.currentUser.email);
+                const isAdminResult = await isUserAdmin();
+                console.log('Hasil verifikasi admin:', isAdminResult);
+                
+                // Muat ulang data anime untuk memastikan data terus diperbarui
+                console.log('Memuat ulang data anime setelah verifikasi admin...');
+                const refreshedAnimeData = await fetchAnimesFromSupabase();
+                if (refreshedAnimeData && refreshedAnimeData.length > 0) {
+                    console.log('Data anime berhasil dimuat ulang:', refreshedAnimeData.length, 'item');
+                    animeData = refreshedAnimeData;
+                    displayAnimeList(animeData);
+                } else {
+                    console.warn('Gagal memuat ulang data anime atau tidak ada data');
+                }
+                
+                // Update UI berdasarkan status admin yang benar
+                if (isAdminResult) {
+                    console.log('MEMAKSA UI UPDATE: User adalah ADMIN');
+                    window.isAdmin = true;
+                    addAnimeBtn.style.display = 'block';
+                    manageGenresBtn.style.display = 'block';
+                    document.body.classList.add('admin-mode');
+                    authBtnText.innerText = 'Keluar';
+                } else {
+                    console.log('User bukan admin, tidak memaksa perubahan UI');
+                }
+                
+                return isAdminResult;
+            } catch (error) {
+                console.error('Error saat memaksa update status admin:', error);
+                return false;
+            } finally {
+                console.log('======= AKHIR PEMAKSAAN STATUS ADMIN =======');
+            }
+        }
+
+        // Initialize
+        async function initialize() {
+            console.log('Initializing app...', new Date().toLocaleTimeString());
+            
+            // Inisialisasi variabel global
+            window.isAdmin = false;
+            window.isLoggedIn = false;
+            
+            // Cek jika ada data login tersimpan di localStorage
+            const savedLoggedIn = JSON.parse(localStorage.getItem('isLoggedIn') || 'false');
+            const savedIsAdmin = JSON.parse(localStorage.getItem('isAdmin') || 'false');
+            let darkMode = JSON.parse(localStorage.getItem('darkMode') || 'false');
+            let animeData = [];
+            
+            if (savedLoggedIn) {
+                console.log('Ditemukan status login tersimpan, menggunakan sementara...', { savedLoggedIn, savedIsAdmin });
+                // Perbarui UI sementara berdasarkan data tersimpan
+                if (savedIsAdmin) {
+                    // Jika user sebelumnya adalah admin, perbarui UI untuk admin
+                    addAnimeBtn.style.display = 'block';
+                    manageGenresBtn.style.display = 'block';
+                    authBtnText.innerText = 'Keluar';
+                    console.log('Set tampilan admin dari localStorage');
+                    
+                    // Set variabel global untuk status admin
+                    window.isAdmin = true;
+                    window.isLoggedIn = true;
+                }
+            }
+            
+            // Periksa status autentikasi dan paksa update admin
+            try {
+                const authStatus = await checkAuthStatus();
+                if (authStatus.success) {
+                    console.log('User terautentikasi saat inisialisasi, memaksa pembaruan status admin...');
+                    await forceUpdateAdminStatus();
+                }
+                
+                // Ambil daftar genre dari Supabase
+                console.log('Mengambil daftar genre dari Supabase...');
+                const supabaseGenres = await fetchGenresFromSupabase();
+                
+                if (supabaseGenres && supabaseGenres.length > 0) {
+                    console.log('Berhasil mendapatkan', supabaseGenres.length, 'genre dari Supabase');
+                    // Merge genre dari Supabase dengan genre default
+                    // Pastikan tidak ada duplikat
+                    supabaseGenres.forEach(genre => {
+                        if (!availableGenres.includes(genre)) {
+                            availableGenres.push(genre);
+                        }
+                    });
+                    // Update UI untuk filter genre
+                    updateGenreFilter();
+                    updateGenreTags();
+                } else {
+                    console.log('Tidak ada genre di Supabase, menggunakan genre default saja');
+                }
+                
+                // Ambil data anime dari Supabase
+                console.log('Mengambil data anime dari Supabase...');
+                const supabaseAnimeData = await fetchAnimesFromSupabase();
+                
+                if (supabaseAnimeData && supabaseAnimeData.length > 0) {
+                    console.log('Berhasil mendapatkan', supabaseAnimeData.length, 'anime dari Supabase');
+                    animeData = supabaseAnimeData;
+                } else {
+                    // Jika tidak ada data di Supabase, gunakan data dari localStorage
+                    console.log('Tidak ada data anime di Supabase, menggunakan data dari localStorage...');
+                    loadFromLocalStorage();
+                }
+            } catch (error) {
+                console.error('Error saat mengambil data dari Supabase:', error);
+                // Jika ada error, gunakan data dari localStorage
+                loadFromLocalStorage();
+            }
+            
+            // Setup listener untuk perubahan autentikasi terlebih dahulu
+            // agar tidak ketinggalan perubahan autentikasi
+            await setupAuthListener(async (event, user) => {
+                console.log(`Auth callback triggered: ${event}`);
+                if (event === 'SIGNED_IN') {
+                    currentUser = user;
+                    console.log(`User terautentikasi dalam callback: ${user.email}`);
+                    // Periksa status admin
+                    const admin = await isUserAdmin();
+                    console.log(`Status admin dari callback: ${admin}`);
+                    await updateAuthState(true, admin);
+                } else if (event === 'SIGNED_OUT') {
+                    console.log('User logout dalam callback');
+                    await updateAuthState(false, false);
+                }
+            });
+            
+            // Update UI
+            updateGenreTags();
+            displayAnimeList(animeData);
+            checkUrlForAnime();
+            toggleView('grid');
+            
+            console.log('Inisialisasi selesai', new Date().toLocaleTimeString());
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    animeModal.style.display = 'none';
+                    addAnimeModal.style.display = 'none';
+                    loginModal.style.display = 'none';
+                    manageGenresModal.style.display = 'none';
+                }
+                
+                // Ctrl+Alt+A to open add anime modal (for admins)
+                if (e.ctrlKey && e.altKey && e.key === 'a' && isAdmin) {
+                    addAnimeBtn.click();
+                }
+                
+                // Ctrl+Alt+G to open manage genres modal (for admins)
+                if (e.ctrlKey && e.altKey && e.key === 'g' && isAdmin) {
+                    showManageGenresModal();
+                }
+            });
+        }
+
+        initialize();
+    </script>
+</body>
+</html>

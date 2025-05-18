@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASI WEB - Autentikasi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --header-bg: #e63946;
+            --header-text: #ffffff;
+            --input-bg: #ffffff;
+            --input-border: #ced4da;
+            --modal-bg: #ffffff;
+            --shadow-color: rgba(0,0,0,0.1);
+            --transition-speed: 0.3s;
+            --admin-color: #3a86ff;
+            --success-color: #06d6a0;
+            --error-color: #e63946;
+        }
+
+        .dark-mode {
+            --bg-color: #121212;
+            --text-color: #f8f9fa;
+            --card-bg: #1e1e1e;
+            --header-bg: #c1121f;
+            --input-bg: #2d2d2d;
+            --input-border: #444;
+            --modal-bg: #2d2d2d;
+            --shadow-color: rgba(0,0,0,0.3);
+            --admin-color: #2667cc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            transition: all var(--transition-speed) ease;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 500px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 5px 15px var(--shadow-color);
+            overflow: hidden;
+        }
+
+        .auth-header {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .auth-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--input-border);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .auth-tab.active {
+            color: var(--header-bg);
+            border-bottom: 3px solid var(--header-bg);
+        }
+
+        .auth-form {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--header-bg);
+            box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.2);
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--header-bg);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .auth-button:hover {
+            background-color: #c1121f;
+            transform: translateY(-2px);
+        }
+
+        .form-footer {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .form-footer a {
+            color: var(--header-bg);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-message {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .auth-message.success {
+            background-color: rgba(6, 214, 160, 0.1);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+
+        .auth-message.error {
+            background-color: rgba(230, 57, 70, 0.1);
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+        }
+
+        .auth-back {
+            display: block;
+            text-align: center;
+            margin-top: 1rem;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        /* Reset Password Form */
+        #resetPasswordForm {
+            display: none;
+        }
+
+        /* Dark Mode Toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+        <i class="fas fa-moon"></i>
+    </button>
+    
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1>ASI WEB</h1>
+        </div>
+        
+        <div class="auth-tabs">
+            <div class="auth-tab active" data-form="loginForm">Login</div>
+            <div class="auth-tab" data-form="signupForm">Register</div>
+        </div>
+        
+        <div class="auth-message" id="authMessage"></div>
+        
+        <div class="auth-form" id="loginForm">
+            <form id="loginFormElement">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="Masukkan email Anda" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Masukkan password Anda" required>
+                </div>
+                <button type="submit" class="auth-button">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login
+                </button>
+            </form>
+            <div class="form-footer">
+                <a href="#" id="forgotPasswordLink">Lupa password?</a>
+            </div>
+        </div>
+        
+        <div class="auth-form" id="signupForm" style="display: none;">
+            <form id="signupFormElement">
+                <div class="form-group">
+                    <label for="signupUsername">Username</label>
+                    <input type="text" id="signupUsername" placeholder="Pilih username" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" placeholder="Masukkan email Anda" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" placeholder="Buat password" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupPasswordConfirm">Konfirmasi Password</label>
+                    <input type="password" id="signupPasswordConfirm" placeholder="Konfirmasi password Anda" required>
+                </div>
+                <button type="submit" class="auth-button">
+                    <i class="fas fa-user-plus"></i>
+                    Register
+                </button>
+            </form>
+        </div>
+        
+        <div class="auth-form" id="resetPasswordForm">
+            <form id="resetPasswordFormElement">
+                <div class="form-group">
+                    <label for="resetEmail">Email</label>
+                    <input type="email" id="resetEmail" placeholder="Masukkan email Anda" required>
+                </div>
+                <button type="submit" class="auth-button">
+                    <i class="fas fa-key"></i>
+                    Reset Password
+                </button>
+            </form>
+            <div class="form-footer">
+                <a href="#" id="backToLoginLink">Kembali ke login</a>
+            </div>
+        </div>
+        
+        <a href="index.html" class="auth-back">
+            <i class="fas fa-arrow-left"></i> Kembali ke halaman utama
+        </a>
+    </div>
+
+    <script>
+        // Supabase Auth Integration
+        // Konfigurasi Supabase - ganti dengan kredensial Supabase Anda
+        const SUPABASE_URL = 'https://lupprdxmaraogkumuewl.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1cHByZHhtYXJhb2drdW11ZXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDc0NTIsImV4cCI6MjA2MzEyMzQ1Mn0.H6MDU-sO4v5PfY2NaUM6YEyt2lmFMeHQyjWm6nL6gcc';
+        
+        // Initialize Supabase client
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Variable untuk menyimpan state autentikasi
+        let currentUser = null;
+        
+        // Fungsi untuk mendaftarkan pengguna baru
+        async function signUp(email, password, username) {
+          try {
+            const { data, error } = await supabaseClient.auth.signUp({
+              email,
+              password,
+              options: {
+                data: {
+                  username: username
+                }
+              }
+            });
+        
+            if (error) throw error;
+            
+            return { success: true, data };
+          } catch (error) {
+            console.error('Error signing up:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // Fungsi untuk login
+        async function signIn(email, password) {
+          try {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+              email,
+              password
+            });
+        
+            if (error) throw error;
+            
+            currentUser = data.user;
+            return { success: true, user: data.user };
+          } catch (error) {
+            console.error('Error signing in:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // Fungsi untuk mendapatkan sesi saat ini
+        async function getCurrentSession() {
+          try {
+            const { data, error } = await supabaseClient.auth.getSession();
+            
+            if (error) throw error;
+            
+            if (data.session) {
+              currentUser = data.session.user;
+              return { success: true, user: data.session.user };
+            }
+            
+            return { success: false, user: null };
+          } catch (error) {
+            console.error('Error getting session:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // Fungsi untuk mengirim reset password
+        async function resetPassword(email) {
+          try {
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+              redirectTo: `${window.location.origin}/index.html?reset=true`
+            });
+        
+            if (error) throw error;
+            
+            return { success: true };
+          } catch (error) {
+            console.error('Error resetting password:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // DOM elements
+        const themeToggle = document.getElementById('themeToggle');
+        const authTabs = document.querySelectorAll('.auth-tab');
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const resetPasswordForm = document.getElementById('resetPasswordForm');
+        const loginFormElement = document.getElementById('loginFormElement');
+        const signupFormElement = document.getElementById('signupFormElement');
+        const resetPasswordFormElement = document.getElementById('resetPasswordFormElement');
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        const backToLoginLink = document.getElementById('backToLoginLink');
+        const authMessage = document.getElementById('authMessage');
+        
+        // Check if user is already logged in
+        async function checkAuthStatus() {
+            const { success, user } = await getCurrentSession();
+            if (success && user) {
+                // Redirect to main page
+                window.location.href = 'index.html';
+            }
+        }
+        
+        // Show auth message
+        function showMessage(message, type = 'error') {
+            authMessage.textContent = message;
+            authMessage.className = `auth-message ${type}`;
+            authMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                authMessage.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Toggle between login and signup forms
+        authTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const formId = tab.dataset.form;
+                
+                authTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'none';
+                resetPasswordForm.style.display = 'none';
+                
+                document.getElementById(formId).style.display = 'block';
+            });
+        });
+        
+        // Toggle dark mode
+        function toggleDarkMode(force = null) {
+            if (force !== null) {
+                document.body.classList.toggle('dark-mode', force);
+                localStorage.setItem('darkMode', force ? 'enabled' : 'disabled');
+                themeToggle.innerHTML = force ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            } else {
+                document.body.classList.toggle('dark-mode');
+                const darkMode = document.body.classList.contains('dark-mode');
+                localStorage.setItem('darkMode', darkMode ? 'enabled' : 'disabled');
+                themeToggle.innerHTML = darkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            }
+        }
+        
+        // Check if dark mode is enabled
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            toggleDarkMode(true);
+        }
+        
+        // Event listeners
+        themeToggle.addEventListener('click', () => toggleDarkMode());
+        
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginForm.style.display = 'none';
+            signupForm.style.display = 'none';
+            resetPasswordForm.style.display = 'block';
+            authTabs.forEach(t => t.classList.remove('active'));
+        });
+        
+        backToLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            resetPasswordForm.style.display = 'none';
+            loginForm.style.display = 'block';
+            authTabs[0].classList.add('active');
+            authTabs[1].classList.remove('active');
+        });
+        
+        // Handle login form submission
+        loginFormElement.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            const result = await signIn(email, password);
+            
+            if (result.success) {
+                showMessage('Login berhasil! Mengalihkan ke halaman utama...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } else {
+                showMessage(`Login gagal: ${result.error}`);
+            }
+        });
+        
+        // Handle signup form submission
+        signupFormElement.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('signupUsername').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
+            
+            if (password !== passwordConfirm) {
+                showMessage('Password tidak cocok. Silakan coba lagi.');
+                return;
+            }
+            
+            const result = await signUp(email, password, username);
+            
+            if (result.success) {
+                showMessage('Registrasi berhasil! Silakan verifikasi email Anda, lalu login.', 'success');
+                setTimeout(() => {
+                    // Switch to login tab
+                    authTabs[0].click();
+                }, 2000);
+            } else {
+                showMessage(`Registrasi gagal: ${result.error}`);
+            }
+        });
+        
+        // Handle reset password form submission
+        resetPasswordFormElement.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('resetEmail').value;
+            
+            const result = await resetPassword(email);
+            
+            if (result.success) {
+                showMessage('Email reset password telah dikirim. Silakan periksa email Anda.', 'success');
+            } else {
+                showMessage(`Reset password gagal: ${result.error}`);
+            }
+        });
+        
+        // Check if user is already logged in on page load
+        checkAuthStatus();
+    </script>
+</body>
+</html>
