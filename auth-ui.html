@@ -221,7 +221,6 @@
         
         <div class="auth-tabs">
             <div class="auth-tab active" data-form="loginForm">Login</div>
-            <div class="auth-tab" data-form="signupForm">Register</div>
         </div>
         
         <div class="auth-message" id="authMessage"></div>
@@ -241,51 +240,9 @@
                     Login
                 </button>
             </form>
-            <div class="form-footer">
-                <a href="#" id="forgotPasswordLink">Lupa password?</a>
-            </div>
         </div>
         
-        <div class="auth-form" id="signupForm" style="display: none;">
-            <form id="signupFormElement">
-                <div class="form-group">
-                    <label for="signupUsername">Username</label>
-                    <input type="text" id="signupUsername" placeholder="Pilih username" required>
-                </div>
-                <div class="form-group">
-                    <label for="signupEmail">Email</label>
-                    <input type="email" id="signupEmail" placeholder="Masukkan email Anda" required>
-                </div>
-                <div class="form-group">
-                    <label for="signupPassword">Password</label>
-                    <input type="password" id="signupPassword" placeholder="Buat password" required>
-                </div>
-                <div class="form-group">
-                    <label for="signupPasswordConfirm">Konfirmasi Password</label>
-                    <input type="password" id="signupPasswordConfirm" placeholder="Konfirmasi password Anda" required>
-                </div>
-                <button type="submit" class="auth-button">
-                    <i class="fas fa-user-plus"></i>
-                    Register
-                </button>
-            </form>
-        </div>
-        
-        <div class="auth-form" id="resetPasswordForm">
-            <form id="resetPasswordFormElement">
-                <div class="form-group">
-                    <label for="resetEmail">Email</label>
-                    <input type="email" id="resetEmail" placeholder="Masukkan email Anda" required>
-                </div>
-                <button type="submit" class="auth-button">
-                    <i class="fas fa-key"></i>
-                    Reset Password
-                </button>
-            </form>
-            <div class="form-footer">
-                <a href="#" id="backToLoginLink">Kembali ke login</a>
-            </div>
-        </div>
+        <!-- Form reset password telah dihapus -->
         
         <a href="index.html" class="auth-back">
             <i class="fas fa-arrow-left"></i> Kembali ke halaman utama
@@ -304,27 +261,7 @@
         // Variable untuk menyimpan state autentikasi
         let currentUser = null;
         
-        // Fungsi untuk mendaftarkan pengguna baru
-        async function signUp(email, password, username) {
-          try {
-            const { data, error } = await supabaseClient.auth.signUp({
-              email,
-              password,
-              options: {
-                data: {
-                  username: username
-                }
-              }
-            });
-        
-            if (error) throw error;
-            
-            return { success: true, data };
-          } catch (error) {
-            console.error('Error signing up:', error.message);
-            return { success: false, error: error.message };
-          }
-        }
+        // Fungsi signUp telah dihapus - pendaftaran saat ini dinonaktifkan
         
         // Fungsi untuk login
         async function signIn(email, password) {
@@ -363,33 +300,18 @@
           }
         }
         
-        // Fungsi untuk mengirim reset password
-        async function resetPassword(email) {
-          try {
-            const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-              redirectTo: `${window.location.origin}/index.html?reset=true`
-            });
-        
-            if (error) throw error;
-            
+        // Fungsi untuk menampilkan info kontak admin
+        function contactAdmin() {
+            alert('Silakan hubungi admin di: admin@asiwebku.com atau WhatsApp ke 0812-3456-7890');
             return { success: true };
-          } catch (error) {
-            console.error('Error resetting password:', error.message);
-            return { success: false, error: error.message };
-          }
         }
         
         // DOM elements
         const themeToggle = document.getElementById('themeToggle');
         const authTabs = document.querySelectorAll('.auth-tab');
         const loginForm = document.getElementById('loginForm');
-        const signupForm = document.getElementById('signupForm');
-        const resetPasswordForm = document.getElementById('resetPasswordForm');
         const loginFormElement = document.getElementById('loginFormElement');
-        const signupFormElement = document.getElementById('signupFormElement');
-        const resetPasswordFormElement = document.getElementById('resetPasswordFormElement');
-        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-        const backToLoginLink = document.getElementById('backToLoginLink');
+        const contactAdminLink = document.getElementById('contactAdminLink');
         const authMessage = document.getElementById('authMessage');
         
         // Check if user is already logged in
@@ -412,21 +334,7 @@
             }, 5000);
         }
         
-        // Toggle between login and signup forms
-        authTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const formId = tab.dataset.form;
-                
-                authTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                
-                loginForm.style.display = 'none';
-                signupForm.style.display = 'none';
-                resetPasswordForm.style.display = 'none';
-                
-                document.getElementById(formId).style.display = 'block';
-            });
-        });
+        // Tidak perlu toggle form karena hanya ada satu form login
         
         // Toggle dark mode
         function toggleDarkMode(force = null) {
@@ -450,20 +358,10 @@
         // Event listeners
         themeToggle.addEventListener('click', () => toggleDarkMode());
         
-        forgotPasswordLink.addEventListener('click', (e) => {
+        // Event untuk tombol kontak admin
+        contactAdminLink.addEventListener('click', (e) => {
             e.preventDefault();
-            loginForm.style.display = 'none';
-            signupForm.style.display = 'none';
-            resetPasswordForm.style.display = 'block';
-            authTabs.forEach(t => t.classList.remove('active'));
-        });
-        
-        backToLoginLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            resetPasswordForm.style.display = 'none';
-            loginForm.style.display = 'block';
-            authTabs[0].classList.add('active');
-            authTabs[1].classList.remove('active');
+            contactAdmin();
         });
         
         // Handle login form submission
@@ -485,47 +383,9 @@
             }
         });
         
-        // Handle signup form submission
-        signupFormElement.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const username = document.getElementById('signupUsername').value;
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
-            
-            if (password !== passwordConfirm) {
-                showMessage('Password tidak cocok. Silakan coba lagi.');
-                return;
-            }
-            
-            const result = await signUp(email, password, username);
-            
-            if (result.success) {
-                showMessage('Registrasi berhasil! Silakan verifikasi email Anda, lalu login.', 'success');
-                setTimeout(() => {
-                    // Switch to login tab
-                    authTabs[0].click();
-                }, 2000);
-            } else {
-                showMessage(`Registrasi gagal: ${result.error}`);
-            }
-        });
+        // Pendaftaran telah dinonaktifkan
         
-        // Handle reset password form submission
-        resetPasswordFormElement.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('resetEmail').value;
-            
-            const result = await resetPassword(email);
-            
-            if (result.success) {
-                showMessage('Email reset password telah dikirim. Silakan periksa email Anda.', 'success');
-            } else {
-                showMessage(`Reset password gagal: ${result.error}`);
-            }
-        });
+        // Reset password form telah dihapus
         
         // Check if user is already logged in on page load
         checkAuthStatus();
