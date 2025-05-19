@@ -301,17 +301,13 @@
         }
         
         // Fungsi untuk menampilkan info kontak admin
-        function contactAdmin() {
-            alert('Silakan hubungi admin di: admin@asiwebku.com atau WhatsApp ke 0812-3456-7890');
-            return { success: true };
-        }
+      
         
         // DOM elements
         const themeToggle = document.getElementById('themeToggle');
         const authTabs = document.querySelectorAll('.auth-tab');
         const loginForm = document.getElementById('loginForm');
         const loginFormElement = document.getElementById('loginFormElement');
-        const contactAdminLink = document.getElementById('contactAdminLink');
         const authMessage = document.getElementById('authMessage');
         
         // Check if user is already logged in
@@ -358,11 +354,7 @@
         // Event listeners
         themeToggle.addEventListener('click', () => toggleDarkMode());
         
-        // Event untuk tombol kontak admin
-        contactAdminLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            contactAdmin();
-        });
+    
         
         // Handle login form submission
         loginFormElement.addEventListener('submit', async (e) => {
