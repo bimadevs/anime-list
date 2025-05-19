@@ -1590,6 +1590,46 @@
             }
         }
         
+        async function deleteGenreFromSupabase(genreName) {
+            try {
+                console.log('Menghapus genre dari Supabase:', genreName);
+                
+                // Cari ID genre berdasarkan nama
+                const { data: genreData, error: getError } = await supabaseClient
+                    .from('genres')
+                    .select('id')
+                    .eq('name', genreName)
+                    .maybeSingle();
+                
+                if (getError) {
+                    console.error('Error mencari genre:', getError);
+                    return { success: false, error: getError };
+                }
+                
+                if (!genreData) {
+                    console.warn('Genre tidak ditemukan di database:', genreName);
+                    return { success: true }; // Genre sudah tidak ada, anggap berhasil
+                }
+                
+                // Hapus genre dari database
+                const { error: deleteError } = await supabaseClient
+                    .from('genres')
+                    .delete()
+                    .eq('name', genreName);
+                
+                if (deleteError) {
+                    console.error('Error menghapus genre:', deleteError);
+                    return { success: false, error: deleteError };
+                }
+                
+                console.log('Genre berhasil dihapus dari Supabase:', genreName);
+                return { success: true };
+            } catch (error) {
+                console.error('Error menghapus genre dari Supabase:', error);
+                return { success: false, error };
+            }
+        }
+        
         // Fungsi wrapper yang memastikan genre disimpan di Supabase dan di lokal
         async function addNewGenre(genre) {
             const genreName = typeof genre === 'string' ? genre : genre.trim();
@@ -1714,24 +1754,71 @@
             manageGenresModal.style.display = 'flex';
         }
 
-        window.deleteGenre = function(genreName) {
-            if (!isAdmin) return;
+        window.deleteGenre = async function(genreName) {
+            if (!window.isAdmin) {
+                alert('Anda harus memiliki akses admin untuk menghapus genre.');
+                return;
+            }
             
             if (confirm(`Hapus genre "${genreName}"? Anime yang menggunakan genre ini akan kehilangan genre tersebut.`)) {
-                // Remove from available genres
-                availableGenres = availableGenres.filter(g => g !== genreName);
+                console.log('======= MENGHAPUS GENRE =======');
+                console.log('Menghapus genre:', genreName);
                 
-                // Remove from all anime
-                animeData.forEach(anime => {
-                    anime.genres = anime.genres.filter(g => g !== genreName);
-                });
+                // Tampilkan indikator loading
+                const loadingElement = document.createElement('div');
+                loadingElement.id = 'genre-delete-loading';
+                loadingElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus genre...';
+                loadingElement.style.position = 'fixed';
+                loadingElement.style.top = '10px';
+                loadingElement.style.right = '10px';
+                loadingElement.style.backgroundColor = 'rgba(0,0,0,0.8)';
+                loadingElement.style.color = 'white';
+                loadingElement.style.padding = '10px';
+                loadingElement.style.borderRadius = '5px';
+                loadingElement.style.zIndex = '9999';
+                document.body.appendChild(loadingElement);
                 
-                // Update UI
-                updateGenreFilter();
-                updateGenreTags();
-                displayAnimeList(animeData);
-                showManageGenresModal();
-                saveToLocalStorage();
+                try {
+                    // 1. Hapus dari Supabase
+                    const result = await deleteGenreFromSupabase(genreName);
+                    if (!result.success) {
+                        throw new Error(`Gagal menghapus genre dari database: ${result.error?.message || 'Error tidak diketahui'}`);
+                    }
+                    
+                    // 2. Hapus dari daftar genre lokal
+                    availableGenres = availableGenres.filter(g => g !== genreName);
+                    
+                    // 3. Hapus dari semua anime yang menggunakan genre ini
+                    animeData.forEach(anime => {
+                        if (anime.genres && Array.isArray(anime.genres)) {
+                            anime.genres = anime.genres.filter(g => g !== genreName);
+                        }
+                    });
+                    
+                    // 4. Update anime yang memiliki genre ini di Supabase (bisa diimplementasikan jika diperlukan)
+                    // Untuk saat ini, kita hanya update data lokal
+                    
+                    // 5. Update UI dan refresh data
+                    updateGenreFilter();
+                    updateGenreTags();
+                    displayAnimeList(animeData);
+                    showManageGenresModal(); // Refresh modal genre
+                    
+                    console.log('Genre berhasil dihapus:', genreName);
+                    console.log('======= AKHIR MENGHAPUS GENRE =======');
+                    
+                    // Notifikasi sukses
+                    alert(`Genre "${genreName}" berhasil dihapus.`);
+                } catch (error) {
+                    console.error('Error saat menghapus genre:', error);
+                    alert(`Terjadi kesalahan saat menghapus genre: ${error.message}`);
+                } finally {
+                    // Hapus indikator loading
+                    const loadingElement = document.getElementById('genre-delete-loading');
+                    if (loadingElement) {
+                        loadingElement.remove();
+                    }
+                }
             }
         };
 
